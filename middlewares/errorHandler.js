@@ -2,7 +2,7 @@ import { ApiError } from '../utils/ApiError.js';
 import config from '../config/index.js';
 
 const errorHandler = (err, req, res, next) => {
-    let error = err instanceof ApiError ? err : new ApiError('Internal Server Error', 500);
+    let error = err instanceof ApiError ? err : new ApiError(500, 'Internal Server Error');
 
     const response = {
         success: false,

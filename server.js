@@ -6,31 +6,34 @@ import morgan from 'morgan';
 import helmet from 'helmet';
 import cors from 'cors';
 
-import routes from './routers/index.routes.js';
+import proxy_routes from './routers/index.routes.js';
 import errorHandler from './middlewares/errorHandler.js';
 import config from './config/index.js';
 
 const app = express();
 
-// Middleware
+app.use('/api', proxy_routes);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    optionsSuccessStatus: 204
+}));
+
 app.use(helmet());
 app.use(morgan('dev'));
 
-// Health Check
 app.get('/', (req, res) => {
-    res.status(200).json({ status: 'UP', message: 'Gateway Service is running.', timestamp: new Date().toLocaleDateString(), })
+    res.status(200).json({ status: 'UP', message: 'Gateway Service is running.', timestamp: new Date().toLocaleDateString() });
 });
 
-// Routes
-app.use('/api', routes);
-
-// Error Handling Middleware
 app.use(errorHandler);
 
-// Server
 const PORT = config.port;
 
 app.listen(PORT, () => {
