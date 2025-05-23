@@ -3,12 +3,14 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import config from '../config/index.js';
 
 const router = express.Router();
+const { services, environment } = config;
+const { authService, userService, dashboardService, crmService, portalService } = services;
 
 const createServiceProxy = (servicePath, target) => createProxyMiddleware({
     target,
     changeOrigin: true,
-    pathRewrite: (path, req) => path.replace(`/api/${servicePath}`, ''),
-    logLevel: config.environment === 'production' ? 'warn' : 'debug',
+    pathRewrite: (path) => path.replace(`/api/${servicePath}`, ''),
+    logLevel: environment === 'production' ? 'warn' : 'debug',
     onError: (err, req, res) => {
         console.error(`[Proxy Error] [${servicePath}]`, err.message);
         res.status(502).json({ error: `Proxy error for /api/${servicePath}` });
@@ -16,17 +18,24 @@ const createServiceProxy = (servicePath, target) => createProxyMiddleware({
     onProxyReq: (proxyReq, req) => {
         proxyReq.setHeader('X-Forwarded-For', req.ip);
     },
-    onProxyRes: (proxyRes, req, res) => {
-        if (config.environment !== 'production') {
+    onProxyRes: (proxyRes, req) => {
+        if (environment !== 'production') {
             console.log(`[Proxy Success] [${servicePath}] ${req.method} ${req.originalUrl} -> ${target}`);
         }
     },
     ws: true,
 });
 
-router.use('/auth', createServiceProxy('auth', config.services.authService));
-router.use('/users', createServiceProxy('users', config.services.userService));
-router.use('/crm', createServiceProxy('crm', config.services.crmService));
-router.use('/portal', createServiceProxy('portal', config.services.portalService));
+const routesMap = [
+    { path: 'auth', target: authService },
+    { path: 'users', target: userService },
+    { path: 'dashboard', target: dashboardService },
+    { path: 'crm', target: crmService },
+    { path: 'portal', target: portalService },
+]
+
+routesMap.forEach(({ path, target }) => {
+    router.use(`/${path}`, createServiceProxy(path, target));
+});
 
 export default router;

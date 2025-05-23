@@ -1,41 +1,35 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import './utils/loadVariables.js';
 
-import express from 'express';
-import morgan from 'morgan';
-import helmet from 'helmet';
-import cors from 'cors';
-
-import proxy_routes from './routers/index.routes.js';
-import errorHandler from './middlewares/errorHandler.js';
+import cluster from 'cluster';
+import os from 'os';
+import startApp from './app.js';
 import config from './config/index.js';
+import redis, { connectRedis } from './config/redis.js';
 
-const app = express();
-
-app.use('/api', proxy_routes);
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-    optionsSuccessStatus: 204
-}));
-
-app.use(helmet());
-app.use(morgan('dev'));
-
-app.get('/', (req, res) => {
-    res.status(200).json({ status: 'UP', message: 'Gateway Service is running.', timestamp: new Date().toLocaleDateString() });
-});
-
-app.use(errorHandler);
-
+const numCPUs = config.environment === 'development' ? 2 : os.cpus().length;
 const PORT = config.port;
 
-app.listen(PORT, () => {
-    console.log(`🚀 API Gateway running on port ${PORT}`);
-});
+if (cluster.isPrimary) {
+    console.log(`🧠 Primary process ${process.pid} is running`);
+
+    for (let i = 0; i < numCPUs; i++) cluster.fork();
+
+    cluster.on('exit', (worker, _code, _signal) => {
+        console.error(`💥 Worker ${worker.process.pid} died. Restarting...`);
+        cluster.fork();
+    });
+} else {
+    (async () => {
+        try {
+            await connectRedis();
+            const app = await startApp(redis);
+            app.listen(PORT, () => {
+                console.log(`🚀 Worker processs ${process.pid} running on port ${PORT}`);
+            });
+
+        } catch (err) {
+            console.error('❌ Dashboard service startup failed:', err);
+            process.exit(1);
+        }
+    })();
+}

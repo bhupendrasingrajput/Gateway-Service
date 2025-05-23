@@ -1,20 +1,28 @@
 import { ApiError } from '../utils/ApiError.js';
 import config from '../config/index.js';
 
+const isDev = config.environment === 'development';
+
 const errorHandler = (err, req, res, next) => {
-    let error = err instanceof ApiError ? err : new ApiError(500, 'Internal Server Error');
+    let error = err;
+
+    if (!(err instanceof ApiError)) {
+        const statusCode = err.statusCode || 500;
+        const message = err.message || 'Internal Server Error';
+        error = new ApiError(statusCode, message);
+    }
+
+    console.error(`[ERROR] ${error.statusCode} - ${error.message}`, {
+        path: req.originalUrl,
+        method: req.method,
+        ...(isDev && { stack: error.stack }),
+    });
 
     const response = {
         success: false,
-        message: error.message || 'Something went wrong',
-        ...(config.environment === 'development' && { stack: err.stack }),
+        message: error.message,
+        ...(isDev && { stack: error.stack }),
     };
-
-    console.error(`[ERROR] ${err.message}`, {
-        path: req.originalUrl,
-        method: req.method,
-        ...(config.environment === 'development' && { stack: err.stack }),
-    });
 
     res.status(error.statusCode).json(response);
 };
