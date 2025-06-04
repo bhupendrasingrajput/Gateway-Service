@@ -6,11 +6,12 @@ import morgan from 'morgan';
 import errorHandler from './middlewares/errorHandler.js';
 import { createRateLimiter } from './middlewares/rateLimiter.js';
 import proxy_routes from './routers/index.routes.js';
+import { authMiddleware } from './middlewares/authMiddleware.js';
 
 const startApp = async (redis) => {
     const app = express();
 
-    app.use('/api', proxy_routes);
+    app.use('/api', authMiddleware, proxy_routes);
 
     app.set('trust proxy', 1);
 

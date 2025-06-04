@@ -8,6 +8,7 @@ const redis = createClient({
         host: host,
         port: Number(port),
         tls: true,
+        connectTimeout : 10000
     },
     username,
     password,
