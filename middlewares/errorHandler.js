@@ -12,7 +12,9 @@ const errorHandler = (err, req, res, next) => {
         error = new ApiError(statusCode, message);
     }
 
-    console.error(`[ERROR] ${error.statusCode} - ${error.message}`, {
+    console.error(`\n🔴 Error : `, {
+        message: error.message,
+        status: error.statusCode,
         path: req.originalUrl,
         method: req.method,
         ...(isDev && { stack: error.stack }),

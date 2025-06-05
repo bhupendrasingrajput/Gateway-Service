@@ -11,7 +11,9 @@ import { authMiddleware } from './middlewares/authMiddleware.js';
 const startApp = async (redis) => {
     const app = express();
 
-    app.use('/api', authMiddleware, proxy_routes);
+    app.use(authMiddleware);
+
+    app.use('/api', proxy_routes);
 
     app.set('trust proxy', 1);
 
