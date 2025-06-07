@@ -5,7 +5,8 @@ import os from 'os';
 import startApp from './app.js';
 import config from './config/index.js';
 import redis, { connectRedis } from './config/redis.js';
-import { loadPublicRoutes } from './scripts/loadPublicRoutes.js';
+import { loadPublicRoutesToRedis } from './scripts/loadPublicRoutes.js';
+// import { loadPublicRoutes } from './scripts/loadPublicRoutes.js';
 
 const numCPUs = config.environment === 'development' ? 2 : os.cpus().length;
 const PORT = config.port;
@@ -23,7 +24,11 @@ if (cluster.isPrimary) {
     (async () => {
         try {
             await connectRedis();
-            await loadPublicRoutes();
+
+            // await loadPublicRoutes();
+
+            await loadPublicRoutesToRedis();
+
             const app = await startApp(redis);
             app.listen(PORT, () => {
                 console.log(`🚀 Worker processs ${process.pid} running on port ${PORT}`);

@@ -30,7 +30,7 @@ export const connectRedis = async () => {
             if (redis.isOpen) {
                 try {
                     await redis.ping();
-                    console.log('💓 Redis keep-alive ping.');
+                    console.log('⏰ Redis keep-alive ping.');
                 } catch (err) {
                     console.warn('⚠️ Redis ping failed:', err.message);
                 }
